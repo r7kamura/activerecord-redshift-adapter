@@ -828,6 +828,19 @@ module ActiveRecord
         # :nodoc:
         Redshift::TableDefinition.new(self, *args, **options)
       end
+
+      def check_if_write_query(sql) # :nodoc:
+        if preventing_writes? && write_query?(sql)
+          raise ActiveRecord::ReadOnlyError, "Write query attempted while in readonly mode: #{sql}"
+        end
+      end
+
+      def mark_transaction_written_if_write(sql) # :nodoc:
+        transaction = current_transaction
+        if transaction.open?
+          transaction.written ||= write_query?(sql)
+        end
+      end
     end
   end
 end
